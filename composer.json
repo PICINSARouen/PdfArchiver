@@ -20,7 +20,7 @@
    },
    "autoload":{
       "psr-4":{
-         "Antoineaugusti\\PdfArchiver\\": "src/AntoineAugusti/PdfArchiver/"
+         "Antoineaugusti\\PdfArchiver\\": "src/Antoineaugusti/PdfArchiver/"
       }
    },
    "minimum-stability":"stable"
