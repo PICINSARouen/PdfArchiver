@@ -21,8 +21,19 @@ class Mover {
 	 */
 	private $localFilesystem;
 
+	/**
+	 * The locale filesystem root path
+	 *
+	 * @var string
+	 */
+	private $localRootPath;
+
 	public function __construct(AdapterInterface $local, AdapterInterface $remote)
 	{
+
+		// Remember the local root path
+		$this->localRootPath = $local->getPathPrefix();
+
 		// Create the local filesystem
 		$local = new Filesystem($local);
 		$local->addPlugin(new ListWith);
@@ -47,14 +58,16 @@ class Mover {
 
 	/**
 	 * Process recursively the given directory
+	 *
 	 * @param  string $path
 	 */
 	private function processDirectory($path)
 	{
-		echo "Proccessing directory ".$path."\n";
-
 		if ($this->hasMakefile($path) AND $this->hasPdfFolder($path))
 		{
+			echo "Proccessing directory ".$path.PHP_EOL;
+
+			$this->callMakefile($path);
 			$this->movePdfFilesToRemote($path.'/pdf');
 		}
 
@@ -77,7 +90,7 @@ class Mover {
 
 		foreach ($contents as $content)
 		{
-			if ($this->mimeIsPdf($content['mimetype']))
+			if ($this->contentIsPdf($content))
 			{
 				$this->manager->put(
 					'remote://'.$this->normalizeRemotePath($content['path']),
@@ -88,10 +101,44 @@ class Mover {
 	}
 
 	/**
+	 * Tell if a file is a PDF
+	 *
+	 * @param  array $content
+	 * @return boolean
+	 */
+	private function contentIsPdf($content)
+	{
+		return $this->mimeIsPdf($content['mimetype']);
+	}
+
+	/**
+	 * Get the local full path from a relative path
+	 *
+	 * @param  string $path
+	 * @return string
+	 */
+	private function getFullPath($path)
+	{
+		return $this->localRootPath.DIRECTORY_SEPARATOR.$path;
+	}
+
+	/**
+	 * Call the makefile for a given local relative path
+	 *
+	 * @param  string $path
+	 */
+	private function callMakefile($path)
+	{
+		$fullPath = $this->getFullPath($path);
+
+		shell_exec("cd ".$fullPath."; make");
+	}
+
+	/**
 	 * Determine from a MIME type if we have a PDF
 	 *
 	 * @param  array $content
-	 * @return
+	 * @return boolean
 	 */
 	private function mimeIsPdf($mime)
 	{
