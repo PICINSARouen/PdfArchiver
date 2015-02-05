@@ -30,7 +30,6 @@ class Mover {
 
 	public function __construct(AdapterInterface $local, AdapterInterface $remote)
 	{
-
 		// Remember the local root path
 		$this->localRootPath = $local->getPathPrefix();
 
@@ -47,57 +46,113 @@ class Mover {
 	}
 
 	/**
-	 * Run the script from the given path of the local filesystem
+	 * Tell if the remote filesystem has got a content
 	 *
-	 * @param  string $path
+	 * @param  array $content
+	 * @return boolean
 	 */
-	public function run($path = '.')
+	public function remoteHasContent($content)
 	{
-		$this->processDirectory($path);
+		return$this->manager->has('remote://'.$this->normalizeRemotePath($content['path']));
 	}
 
 	/**
-	 * Process recursively the given directory
+	 * Get a list of PDF files in the local filesystem at a given relative path
 	 *
 	 * @param  string $path
+	 * @return array Array of PDF files
 	 */
-	private function processDirectory($path)
+	public function getPDFFiles($path)
 	{
-		if ($this->hasMakefile($path) AND $this->hasPdfFolder($path))
-		{
-			echo "Proccessing directory ".$path.PHP_EOL;
-
-			$this->callMakefile($path);
-			$this->movePdfFilesToRemote($path.'/pdf');
-		}
-
-		// Process sub directories
-		$directories = $this->getDirectories($path);
-		foreach ($directories as $directoryPath)
-		{
-			$this->processDirectory($directoryPath);
-		}
-	}
-
-	/**
-	 * Move PDF files inside a PDF folder to the remote filesystem
-	 *
-	 * @param  string $path
-	 */
-	private function movePdfFilesToRemote($path)
-	{
+		$files = [];
 		$contents = $this->localFilesystem->listWith(['mimetype', 'path'], $path);
 
 		foreach ($contents as $content)
 		{
 			if ($this->contentIsPdf($content))
 			{
-				$this->manager->put(
-					'remote://'.$this->normalizeRemotePath($content['path']),
-					$this->manager->read('local://'.$content['path'])
-				);
+				$files[] = $content;
 			}
 		}
+
+		return $files;
+	}
+
+	/**
+	 * Move a local content to the remote filesystem
+	 *
+	 * @param  array $content
+	 */
+	public function moveContentToRemote($content)
+	{
+		$this->manager->put(
+			'remote://'.$this->normalizeRemotePath($content['path']),
+			$this->manager->read('local://'.$content['path'])
+		);
+	}
+
+	/**
+	 * Call the makefile for a given local relative path
+	 *
+	 * @param  string $path
+	 */
+	public function callMakefile($path)
+	{
+		$fullPath = $this->getFullPath($path);
+
+		shell_exec("cd ".$fullPath."; make");
+	}
+
+	/**
+	 * Tell if we have a makefile in the given path
+	 *
+	 * @param  string  $path
+	 * @return boolean
+	 */
+	public function hasMakefile($path)
+	{
+		if ($path === '.')
+			return $this->manager->has('local://makefile');
+
+		return $this->manager->has('local://'.$path.'/makefile');
+	}
+
+	/**
+	 * Tell if we have a "pdf" folder in the given path
+	 *
+	 * @param  string  $path
+	 * @return boolean
+	 */
+	public function hasPdfFolder($path)
+	{
+		if ($path === '.')
+			return $this->manager->has('local://pdf');
+
+		return $this->manager->has('local://'.$path.'/pdf');
+	}
+
+	/**
+	 * Get directories in the local filesystem from a path
+	 *
+	 * @param  string $path
+	 * @return array An array of paths. Paths are relative.
+	 */
+	public function getDirectories($path)
+	{
+		if ($path == '.')
+			$path = '';
+
+		$directories = [];
+		$contents = $this->manager->listContents('local://'.$path);
+
+		foreach ($contents as $content)
+		{
+			// Remember the path if we've found a directory
+			if ($content['type'] == 'dir')
+				$directories[] = $content['path'];
+		}
+
+		return $directories;
 	}
 
 	/**
@@ -123,18 +178,6 @@ class Mover {
 	}
 
 	/**
-	 * Call the makefile for a given local relative path
-	 *
-	 * @param  string $path
-	 */
-	private function callMakefile($path)
-	{
-		$fullPath = $this->getFullPath($path);
-
-		shell_exec("cd ".$fullPath."; make");
-	}
-
-	/**
 	 * Determine from a MIME type if we have a PDF
 	 *
 	 * @param  array $content
@@ -143,30 +186,6 @@ class Mover {
 	private function mimeIsPdf($mime)
 	{
 		return $mime === 'application/pdf';
-	}
-
-	/**
-	 * Get directories in the local filesystem from a path
-	 *
-	 * @param  string $path
-	 * @return array An array of paths. Paths are relative.
-	 */
-	private function getDirectories($path)
-	{
-		if ($path == '.')
-			$path = '';
-
-		$directories = [];
-		$contents = $this->manager->listContents('local://'.$path);
-
-		foreach ($contents as $content)
-		{
-			// Remember the path if we've found a directory
-			if ($content['type'] == 'dir')
-				$directories[] = $content['path'];
-		}
-
-		return $directories;
 	}
 
 	/**
@@ -183,33 +202,5 @@ class Mover {
 		$path = str_replace('pdf', '', $infos['dirname']);
 
 		return $path.$infos['basename'];
-	}
-
-	/**
-	 * Tell if we have a makefile in the given path
-	 *
-	 * @param  string  $path
-	 * @return boolean
-	 */
-	private function hasMakefile($path)
-	{
-		if ($path === '.')
-			return $this->manager->has('local://makefile');
-
-		return $this->manager->has('local://'.$path.'/makefile');
-	}
-
-	/**
-	 * Tell if we have a "pdf" folder in the given path
-	 *
-	 * @param  string  $path
-	 * @return boolean
-	 */
-	private function hasPdfFolder($path)
-	{
-		if ($path === '.')
-			return $this->manager->has('local://pdf');
-
-		return $this->manager->has('local://'.$path.'/pdf');
 	}
 }

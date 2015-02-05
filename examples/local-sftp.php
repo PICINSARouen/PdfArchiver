@@ -1,13 +1,13 @@
 <?php
-
 // Don't forget to require the SFTP adapter: composer require league/flysystem-sftp
 // Documentation for this adapter: http://flysystem.thephpleague.com/adapter/sftp/
 
 require 'vendor/autoload.php';
 
-use Antoineaugusti\PdfArchiver\Mover;
+use Antoineaugusti\PdfArchiver\Console\MoverCommand;
 use League\Flysystem\Adapter\Local as LocalAdapter;
 use League\Flysystem\Sftp\SftpAdapter;
+use Symfony\Component\Console\Application;
 
 $local = new LocalAdapter('/tmp/test');
 $sftp = new SftpAdapter([
@@ -19,9 +19,10 @@ $sftp = new SftpAdapter([
 	'timeout'    => 10,
 ]);
 
-// The path to start from
-$path = ($argc == 2) ? $argv[1] : '.';
+$moverCommand = new MoverCommand;
+$moverCommand->setLocalAdapter($local);
+$moverCommand->setRemoteAdapter($sftp);
 
-// Run the script
-$mover = new Mover($local, $sftp);
-$mover->run($path);
+$application = new Application();
+$application->add($moverCommand);
+$application->run();
