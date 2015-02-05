@@ -50,6 +50,9 @@ class MoverCommand extends Command {
 		$this->remoteAdapter = $remote;
 	}
 
+	/**
+	 * Parameters for the command
+	 */
 	protected function configure()
 	{
 		$this
@@ -69,6 +72,12 @@ class MoverCommand extends Command {
 		;
 	}
 
+	/**
+	 * Execute the command
+	 *
+	 * @param  \Symfony\Component\Console\Input\InputInterface  $input
+	 * @param  \Symfony\Component\Console\Output\OutputInterface $output
+	 */
 	protected function execute(InputInterface $input, OutputInterface $output)
 	{
 		$this->ensureAdaptersAreSet($output);
@@ -119,24 +128,52 @@ class MoverCommand extends Command {
 
 		foreach ($files as $file)
 		{
-			$filename = $this->getFilename($file);
-
-			// If the remote has already the file,
-			// ask before uploading again
-			if ($this->mover->remoteHasContent($file))
-			{
-				$helper = $this->getHelper('question');
-				$question = new ConfirmationQuestion('<error>Replace</error> <question>'.$filename."? (y/n)</question>", false);
-
-				if ($helper->ask($input, $output, $question))
-					$this->moveFile($output, $file);
-			}
-			else
-				$this->moveFile($output, $file);
-
+			$this->processFile($input, $output, $file);
 		}
 	}
 
+	/**
+	 * Determine if we need to copy a file to the remote filesystem,
+	 * and if so, do it.
+	 *
+	 * @param  \Symfony\Component\Console\Input\InputInterface $input
+	 * @param  \Symfony\Component\Console\Output\OutputInterface $output
+	 * @param  array $file The file to process
+	 */
+	private function processFile(InputInterface $input, OutputInterface $output, $file)
+	{
+		// If the remote has already the file,
+		// ask before uploading again
+		if ($this->mover->remoteHasContent($file))
+		{
+			$helper = $this->getHelper('question');
+			$question = new ConfirmationQuestion($this->buildQuestionForFile($file), false);
+
+			if ($helper->ask($input, $output, $question))
+				$this->moveFile($output, $file);
+		}
+		else
+			$this->moveFile($output, $file);
+	}
+
+	/**
+	 * Build the question string for a file
+	 *
+	 * @param  string $file
+	 */
+	private function buildQuestionForFile($file)
+	{
+		$filename = $this->getFilename($file);
+
+		return '<error>Replace</error> <question>'.$filename."? (y/n)</question>";
+	}
+
+	/**
+	 * Copy a file from the local filesystem to the remote one
+	 *
+	 * @param  \Symfony\Component\Console\Output\OutputInterface $output
+	 * @param  string $file
+	 */
 	private function moveFile($output, $file)
 	{
 		$filename = $this->getFilename($file);
