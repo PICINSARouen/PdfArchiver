@@ -28,7 +28,7 @@ company/
 └── dummy
 ```
 
-We will transfer PDF files to the remote file system with this architecture:
+We will transfer PDF files to the remote filesystem with this architecture:
 ```
 company/
 ├── first-folder
@@ -55,7 +55,7 @@ $ composer install
 ```
 
 ## Filesystem adapters
-PdfArchiver relies on the awesome [Flysystem package from The PHP League](http://flysystem.thephpleague.com). A lot of adapters are available in the documentation. Determine which adapters you'll need for your local and remote file systems and then let the `Antoineaugusti\PdfArchiver\Mover` class do the work for you.
+PdfArchiver relies on the awesome [Flysystem package from The PHP League](http://flysystem.thephpleague.com). A lot of adapters are available in the documentation. Determine which adapters you'll need for your local and remote filesystems and then let the `Antoineaugusti\PdfArchiver\Console\MoverCommand` class do the work for you.
 
 ### Example: local filesystem to SFTP server
 For example, let's say you want to move generated PDFs from your local machine to a SFTP server. An example is given [here](examples/local-sftp.php).
@@ -65,18 +65,26 @@ Steal the example file and place it at the root of this directory. Replace confi
 **Don't forget to add dependencies for your adapters** in your `composer.json` file and then run `composer update`.
 
 ## How to run
-*`script.php` is the file placed at the root of this directory where you have previously wired your adapters to the Mover class*.
+*`commands` is the file placed at the root of this directory where you have previously wired your adapters to the MoverCommand class*.
 
-Once you've chosen the right adapters (don't forget to pull dependencies with `composer update`) and you've set your configuration values, it will be very easy. The `Antoineaugusti\PdfArchiver\Mover` class will search recursively from the root folder you have defined in your local adapter with the following command:
+Once you've chosen the right adapters (don't forget to pull dependencies with `composer update`) and you've set your configuration values, it will be very easy. The `Antoineaugusti\PdfArchiver\Console\MoverCommand` class will search recursively from the root folder you have defined in your local adapter with the following command:
 
 ```bash
-$ php script.php
+$ php commands archive
 ```
 
+### Starting from a subfolder
 If you don't want to start at the defined root folder, but somewhere else, just give the relative path as the first argument:
 ```bash
-$ php script.php example/folder
+$ php commands archive example/subfolder
+```
+
+### Generating PDF files
+Since we are relying on the existence of a `makefile` and `pdf` folder, you may want to generate your PDF files before moving them to a remote location. Just pass the option `--make` when calling the script:
+
+```bash
+$ php commands archive example/subfolder --make
 ```
 
 ## Contributing
-Contributions are very welcome. This package is pretty simple right now and it only suits my needs. Feel free to open a PR to add some options or additional behaviour!
+Contributions are very welcome. This package is pretty simple right now and it only suits my needs. Feel free to open a PR to add some options or additional behavior!

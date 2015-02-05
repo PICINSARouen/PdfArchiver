@@ -9,7 +9,10 @@ use League\Flysystem\Adapter\Local as LocalAdapter;
 use League\Flysystem\Sftp\SftpAdapter;
 use Symfony\Component\Console\Application;
 
+// Your local filesystem
 $local = new LocalAdapter('/tmp/test');
+
+// Your remote filesystem
 $sftp = new SftpAdapter([
 	'host'       => 'example.com',
 	'port'       => 22,
@@ -19,10 +22,12 @@ $sftp = new SftpAdapter([
 	'timeout'    => 10,
 ]);
 
+// Wire your adapters to the command
 $moverCommand = new MoverCommand;
 $moverCommand->setLocalAdapter($local);
 $moverCommand->setRemoteAdapter($sftp);
 
+// Register the command and run the application
 $application = new Application();
 $application->add($moverCommand);
 $application->run();
