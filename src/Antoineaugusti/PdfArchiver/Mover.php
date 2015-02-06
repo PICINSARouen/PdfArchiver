@@ -53,7 +53,7 @@ class Mover {
 	 */
 	public function remoteHasContent($content)
 	{
-		return$this->manager->has('remote://'.$this->normalizeRemotePath($content['path']));
+		return $this->manager->has('remote://'.$this->normalizeRemotePath($content['path']));
 	}
 
 	/**
