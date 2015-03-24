@@ -165,7 +165,7 @@ class MoverCommand extends Command {
 	{
 		$filename = $this->getFilename($file);
 
-		return '<error>Replace</error> <question>'.$filename."? (y/N)</question>";
+		return '<error>Replace</error> <question>'.$filename."? [y/N]</question>";
 	}
 
 	/**
