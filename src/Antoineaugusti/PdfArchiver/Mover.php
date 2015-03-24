@@ -75,6 +75,9 @@ class Mover {
 			}
 		}
 
+		// Sort files to keep the order
+		sort($files);
+
 		return $files;
 	}
 
